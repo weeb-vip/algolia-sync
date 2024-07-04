@@ -23,9 +23,10 @@ type PulsarConfig struct {
 }
 
 type AlgoliaConfig struct {
-	AppID  string `default:"" env:"ALGOLIA_APP_ID"`
-	APIKey string `default:"" env:"ALGOLIA_API_KEY"`
-	Index  string `default:"" env:"ALGOLIA_INDEX"`
+	AppID        string `default:"" env:"ALGOLIA_APP_ID"`
+	APIKey       string `default:"" env:"ALGOLIA_API_KEY"`
+	Index        string `default:"" env:"ALGOLIA_INDEX"`
+	FlushTimeout int    `default:"10" env:"ALGOLIA_FLUSH_TIMEOUT"`
 }
 
 func LoadConfigOrPanic() Config {

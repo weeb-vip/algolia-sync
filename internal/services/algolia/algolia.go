@@ -36,11 +36,12 @@ func NewAlgoliaService[T any](ctx context.Context, algoliaCfg config.AlgoliaConf
 		AddBatch:      make([]T, 0),
 		DeleteBatch:   make([]T, 0),
 	}
+	timeout := time.Duration(algoliaCfg.FlushTimeout) * time.Second
 	// start autoflush which runs ever 5 minutes
 	go func() {
 		for {
 			AutoFlush[T](ctx, service)
-			<-time.After(5 * time.Minute)
+			<-time.After(timeout)
 		}
 	}()
 
