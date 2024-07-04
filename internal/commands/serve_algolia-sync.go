@@ -11,7 +11,7 @@ import (
 
 // serveCmd represents the serve command
 var serveAlgoliaSyncCmd = &cobra.Command{
-	Use:   "serve-image-sync",
+	Use:   "serve-algolia-sync",
 	Short: "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
