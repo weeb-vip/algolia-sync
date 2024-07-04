@@ -21,7 +21,7 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Println("Running anime eventing...")
-		return eventing.EventingImage()
+		return eventing.EventingAlgolia()
 	},
 }
 

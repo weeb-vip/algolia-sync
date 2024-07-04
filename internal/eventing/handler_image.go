@@ -5,21 +5,21 @@ import (
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/weeb-vip/algolia-sync/config"
 	"github.com/weeb-vip/algolia-sync/internal/logger"
+	"github.com/weeb-vip/algolia-sync/internal/services/algolia"
 	"github.com/weeb-vip/algolia-sync/internal/services/algolia_processor"
 	"github.com/weeb-vip/algolia-sync/internal/services/processor"
-	"github.com/weeb-vip/algolia-sync/internal/services/storage/minio"
 	"go.uber.org/zap"
 	"time"
 )
 
-func EventingImage() error {
+func EventingAlgolia() error {
 	cfg := config.LoadConfigOrPanic()
 	ctx := context.Background()
 	log := logger.Get()
 
-	store := minio.NewMinioStorage(cfg.MinioConfig)
+	algoService := algolia.NewAlgoliaService[algolia_processor.Schema](ctx, cfg.AlgoliaConfig)
 
-	imageProcessor := algolia_processor.NewImageProcessor(store)
+	imageProcessor := algolia_processor.NewImageProcessor(algoService)
 
 	messageProcessor := processor.NewProcessor[algolia_processor.Payload]()
 

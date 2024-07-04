@@ -1,5 +1,5 @@
 # anime-sync
-sync anime data. More of a POC since pulsar mariadb sync does not work
+sync anime search data.
 
 ```mermaid
 flowchart TD
