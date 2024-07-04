@@ -16,6 +16,7 @@ func EventingAlgolia() error {
 	cfg := config.LoadConfigOrPanic()
 	ctx := context.Background()
 	log := logger.Get()
+	ctx = logger.WithCtx(ctx, log)
 
 	algoService := algolia.NewAlgoliaService[algolia_processor.Schema](ctx, cfg.AlgoliaConfig)
 
@@ -41,7 +42,6 @@ func EventingAlgolia() error {
 	})
 
 	defer consumer.Close()
-	ctx = logger.WithCtx(ctx, log)
 
 	// create channel to receive messages
 
