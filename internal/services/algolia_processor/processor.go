@@ -5,6 +5,7 @@ import (
 	"github.com/weeb-vip/algolia-sync/internal/logger"
 	"github.com/weeb-vip/algolia-sync/internal/services/algolia"
 	"golang.org/x/net/context"
+	"strings"
 )
 
 type ImageProcessor interface {
@@ -29,8 +30,9 @@ func (p *ImageProcessorImpl) Process(ctx context.Context, data Payload) error {
 			data.Data.ObjectId = data.Data.AnidbID
 		} else {
 			if data.Data.TitleEn != nil && data.Data.Type != nil && data.Data.StartDate != nil {
-				id := fmt.Sprintf("%s-%s-%s", *data.Data.TitleEn, *data.Data.Type, *data.Data.StartDate)
-
+				id := fmt.Sprintf("%s_%s_%s", *data.Data.TitleEn, *data.Data.Type, *data.Data.StartDate)
+				// replace all spaces with underscores
+				id = strings.ReplaceAll(id, " ", "_")
 				data.Data.ObjectId = &id
 			}
 		}
