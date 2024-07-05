@@ -34,6 +34,13 @@ func (p *ImageProcessorImpl) Process(ctx context.Context, data Payload) error {
 				// replace all spaces with underscores
 				id = strings.ReplaceAll(id, " ", "_")
 				data.Data.ObjectId = &id
+			} else if data.Data.TitleEn != nil && data.Data.Type != nil {
+				id := fmt.Sprintf("%s_%s", *data.Data.TitleEn, *data.Data.Type)
+				// replace all spaces with underscores
+				id = strings.ReplaceAll(id, " ", "_")
+				data.Data.ObjectId = &id
+			} else {
+				return fmt.Errorf("object id is nil")
 			}
 		}
 		if data.Data.ObjectId == nil {
