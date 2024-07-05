@@ -5,6 +5,7 @@ import (
 	"github.com/algolia/algoliasearch-client-go/v3/algolia/search"
 	"github.com/weeb-vip/algolia-sync/config"
 	"github.com/weeb-vip/algolia-sync/internal/logger"
+	"go.uber.org/zap"
 	"time"
 )
 
@@ -79,7 +80,7 @@ func (a *AlgoliaServiceImpl[T]) AddToIndex(ctx context.Context, object T) (res s
 func (a *AlgoliaServiceImpl[T]) Flush(ctx context.Context) (res search.GroupBatchRes, err error) {
 	log := logger.FromCtx(ctx)
 	if len(a.AddBatch) > 0 {
-		log.Info("Flushing algolia...")
+		log.With(zap.Int("batchSize", len(a.AddBatch))).Info("Flushing algolia...")
 		res, err = a.Index.SaveObjects(a.AddBatch)
 		if err != nil {
 			return res, err
