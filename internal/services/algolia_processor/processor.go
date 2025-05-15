@@ -26,22 +26,16 @@ func (p *ImageProcessorImpl) Process(ctx context.Context, data Payload) error {
 	log := logger.FromCtx(ctx)
 	if data.Action == CreateAction {
 		log.Info("Processing create action")
-		if data.Data.AnidbID != nil {
-			data.Data.ObjectId = data.Data.AnidbID
-		} else {
-			if data.Data.TitleEn != nil && data.Data.Type != nil && data.Data.StartDate != nil {
-				id := fmt.Sprintf("%s_%s_%s", *data.Data.TitleEn, *data.Data.Type, *data.Data.StartDate)
-				// replace all spaces with underscores
-				id = strings.ReplaceAll(id, " ", "_")
-				data.Data.ObjectId = &id
-			} else if data.Data.TitleEn != nil && data.Data.Type != nil {
-				id := fmt.Sprintf("%s_%s", *data.Data.TitleEn, *data.Data.Type)
-				// replace all spaces with underscores
-				id = strings.ReplaceAll(id, " ", "_")
-				data.Data.ObjectId = &id
-			} else {
-				return fmt.Errorf("object id is nil")
-			}
+		if data.Data.TitleEn != nil {
+			// convert title to lowercase and replace spaces with underscores
+			title := strings.ToLower(*data.Data.TitleEn)
+			title = strings.ReplaceAll(title, " ", "_")
+			data.Data.ObjectId = &title
+		} else if data.Data.TitleJp != nil {
+			// convert title to lowercase and replace spaces with underscores
+			title := strings.ToLower(*data.Data.TitleJp)
+			title = strings.ReplaceAll(title, " ", "_")
+			data.Data.ObjectId = &title
 		}
 		if data.Data.ObjectId == nil {
 			return fmt.Errorf("object id is nil")
