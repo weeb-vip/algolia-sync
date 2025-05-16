@@ -34,8 +34,8 @@ type Schema struct {
 	Studios       *string `json:"studios"`
 	Ranking       *int    `json:"ranking"`
 	ObjectId      *string `json:"objectID"`
+	DateRank      *int64  `json:"date_rank"`
 }
-
 type Payload struct {
 	Action Action `json:"action"`
 	Data   Schema `json:"data"`

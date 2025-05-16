@@ -7,6 +7,7 @@ import (
 	"golang.org/x/net/context"
 	"net/url"
 	"strings"
+	"time"
 )
 
 type ImageProcessor interface {
@@ -44,6 +45,18 @@ func (p *ImageProcessorImpl) Process(ctx context.Context, data Payload) error {
 		// convert to url encoded string
 		encoded := url.QueryEscape(*data.Data.ObjectId)
 		data.Data.ObjectId = &encoded
+		// convert startDate to unix timestamp
+		if data.Data.StartDate != nil {
+			// format of startDate 2007-04-02 04:00:00
+			startDate, err := time.Parse("2006-01-02 15:04:05", *data.Data.StartDate)
+			if err != nil {
+				return err
+			}
+			dateRank := startDate.Unix()
+			dateRank = dateRank / 1000
+			data.Data.DateRank = &dateRank
+		}
+
 		_, err := p.AlgoliaService.AddToIndex(ctx, data.Data)
 		if err != nil {
 			return err
