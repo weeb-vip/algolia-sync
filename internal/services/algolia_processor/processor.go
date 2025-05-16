@@ -5,6 +5,7 @@ import (
 	"github.com/weeb-vip/algolia-sync/internal/logger"
 	"github.com/weeb-vip/algolia-sync/internal/services/algolia"
 	"golang.org/x/net/context"
+	"net/url"
 	"strings"
 )
 
@@ -40,6 +41,9 @@ func (p *ImageProcessorImpl) Process(ctx context.Context, data Payload) error {
 		if data.Data.ObjectId == nil {
 			return fmt.Errorf("object id is nil")
 		}
+		// convert to url encoded string
+		encoded := url.QueryEscape(*data.Data.ObjectId)
+		data.Data.ObjectId = &encoded
 		_, err := p.AlgoliaService.AddToIndex(ctx, data.Data)
 		if err != nil {
 			return err
