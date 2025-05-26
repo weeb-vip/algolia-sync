@@ -6,7 +6,6 @@ import (
 	"github.com/weeb-vip/algolia-sync/internal/services/algolia"
 	"golang.org/x/net/context"
 	"net/url"
-	"strings"
 	"time"
 )
 
@@ -28,17 +27,7 @@ func (p *ImageProcessorImpl) Process(ctx context.Context, data Payload) error {
 	log := logger.FromCtx(ctx)
 	if data.Action == CreateAction {
 		log.Info("Processing create action")
-		if data.Data.TitleEn != nil {
-			// convert title to lowercase and replace spaces with underscores
-			title := strings.ToLower(*data.Data.TitleEn)
-			title = strings.ReplaceAll(title, " ", "_")
-			data.Data.ObjectId = &title
-		} else if data.Data.TitleJp != nil {
-			// convert title to lowercase and replace spaces with underscores
-			title := strings.ToLower(*data.Data.TitleJp)
-			title = strings.ReplaceAll(title, " ", "_")
-			data.Data.ObjectId = &title
-		}
+		data.Data.ObjectId = &data.Data.Id
 		if data.Data.ObjectId == nil {
 			return fmt.Errorf("object id is nil")
 		}
