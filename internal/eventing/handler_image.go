@@ -5,9 +5,9 @@ import (
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/weeb-vip/algolia-sync/config"
 	"github.com/weeb-vip/algolia-sync/internal/logger"
-	"github.com/weeb-vip/algolia-sync/internal/services/algolia"
-	"github.com/weeb-vip/algolia-sync/internal/services/algolia_processor"
 	"github.com/weeb-vip/algolia-sync/internal/services/processor"
+	"github.com/weeb-vip/algolia-sync/internal/services/redis"
+	"github.com/weeb-vip/algolia-sync/internal/services/redis_processor"
 	"go.uber.org/zap"
 	"time"
 )
@@ -18,11 +18,11 @@ func EventingAlgolia() error {
 	log := logger.Get()
 	ctx = logger.WithCtx(ctx, log)
 
-	algoService := algolia.NewAlgoliaService[algolia_processor.Schema](ctx, cfg.AlgoliaConfig)
+	redisService := redis.NewRedisService[redis_processor.QueuedItem](ctx, cfg.RedisConfig)
 
-	imageProcessor := algolia_processor.NewImageProcessor(algoService)
+	imageProcessor := redis_processor.NewImageProcessor(redisService)
 
-	messageProcessor := processor.NewProcessor[algolia_processor.Payload]()
+	messageProcessor := processor.NewProcessor[redis_processor.Payload]()
 
 	client, err := pulsar.NewClient(pulsar.ClientOptions{
 		URL: cfg.PulsarConfig.URL,

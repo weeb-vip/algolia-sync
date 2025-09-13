@@ -49,6 +49,18 @@ func NewAlgoliaService[T any](ctx context.Context, algoliaCfg config.AlgoliaConf
 	return service
 }
 
+func NewAlgoliaServiceWithoutTimer[T any](ctx context.Context, algoliaCfg config.AlgoliaConfig) AlgoliaService[T] {
+	client := search.NewClient(algoliaCfg.AppID, algoliaCfg.APIKey)
+	service := &AlgoliaServiceImpl[T]{
+		AlgoliaSearch: client,
+		Index:         client.InitIndex(algoliaCfg.Index),
+		AddBatch:      make([]T, 0),
+		DeleteBatch:   make([]T, 0),
+	}
+	// No timer-based auto flush for cron job usage
+	return service
+}
+
 func (a *AlgoliaServiceImpl[T]) AddToIndex(ctx context.Context, object T) (res search.GroupBatchRes, err error) {
 	log := logger.FromCtx(ctx)
 	log.Info("adding to batch...")

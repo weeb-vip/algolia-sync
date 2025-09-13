@@ -9,8 +9,8 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/weeb-vip/algolia-sync/config"
 	"github.com/weeb-vip/algolia-sync/internal/logger"
-	"github.com/weeb-vip/algolia-sync/internal/services/algolia"
-	"github.com/weeb-vip/algolia-sync/internal/services/algolia_processor_kafka"
+	"github.com/weeb-vip/algolia-sync/internal/services/redis"
+	"github.com/weeb-vip/algolia-sync/internal/services/redis_processor_kafka"
 	"go.uber.org/zap"
 )
 
@@ -50,14 +50,14 @@ func EventingAlgoliaKafka() error {
 
 	log.Info("Creating processor for Kafka messages", zap.String("topic", cfg.KafkaConfig.Topic))
 
-	algoliaService := algolia.NewAlgoliaService[algolia_processor_kafka.Schema](ctx, cfg.AlgoliaConfig)
+	redisService := redis.NewRedisService[redis_processor_kafka.QueuedItem](ctx, cfg.RedisConfig)
 
-	algoliaProcessor := algolia_processor_kafka.NewAlgoliaProcessor(algoliaService)
+	redisProcessor := redis_processor_kafka.NewRedisProcessor(redisService)
 
-	processorInstance := processor.NewProcessor[*kafka.Message, algolia_processor_kafka.Payload](driver, cfg.KafkaConfig.Topic, algoliaProcessor.Process)
+	processorInstance := processor.NewProcessor[*kafka.Message, redis_processor_kafka.Payload](driver, cfg.KafkaConfig.Topic, redisProcessor.Process)
 
 	log.Info("initializing backoff retry middleware", zap.String("topic", cfg.KafkaConfig.Topic))
-	backoffRetryInstance := backoffretry.NewBackoffRetry[algolia_processor_kafka.Payload](driver, backoffretry.Config{
+	backoffRetryInstance := backoffretry.NewBackoffRetry[redis_processor_kafka.Payload](driver, backoffretry.Config{
 		MaxRetries: 3,
 		HeaderKey:  "retry",
 		RetryQueue: cfg.KafkaConfig.Topic + "-retry",

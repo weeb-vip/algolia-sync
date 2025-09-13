@@ -9,6 +9,7 @@ type Config struct {
 	PulsarConfig  PulsarConfig
 	AlgoliaConfig AlgoliaConfig
 	KafkaConfig   KafkaConfig
+	RedisConfig   RedisConfig
 }
 
 type AppConfig struct {
@@ -36,6 +37,13 @@ type KafkaConfig struct {
 	Topic             string `default:"algolia-sync" env:"KAFKA_TOPIC"`
 	Offset            string `default:"earliest" env:"KAFKA_OFFSET"`
 	Debug             string `default:"" env:"KAFKA_DEBUG"`
+}
+
+type RedisConfig struct {
+	URL      string `default:"redis://localhost:6379" env:"REDIS_URL"`
+	Password string `default:"" env:"REDIS_PASSWORD"`
+	DB       int    `default:"0" env:"REDIS_DB"`
+	Key      string `default:"algolia-sync:data" env:"REDIS_KEY"`
 }
 
 func LoadConfigOrPanic() Config {
