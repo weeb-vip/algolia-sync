@@ -7,6 +7,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/weeb-vip/algolia-sync/internal/logger"
 	"github.com/weeb-vip/algolia-sync/internal/services/algolia"
+	"go.uber.org/zap"
 	"net/url"
 	"time"
 )
@@ -44,11 +45,14 @@ func (p *AlgoliaProcessorImpl) Process(ctx context.Context, data event.Event[*ka
 			// format of startDate 2007-04-02 04:00:00
 			startDate, err := time.Parse("2006-01-02 15:04:05", *payload.Data.StartDate)
 			if err != nil {
-				return data, err
+				log.Warn("Failed to parse start date, continuing without date_rank",
+					zap.String("startDate", *payload.Data.StartDate),
+					zap.Error(err))
+			} else {
+				dateRank := startDate.Unix()
+				dateRank = dateRank / 1000
+				payload.Data.DateRank = &dateRank
 			}
-			dateRank := startDate.Unix()
-			dateRank = dateRank / 1000
-			payload.Data.DateRank = &dateRank
 		}
 
 		_, err := p.AlgoliaService.AddToIndex(ctx, payload.Data)

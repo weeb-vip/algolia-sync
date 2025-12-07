@@ -42,11 +42,14 @@ func (p *ImageProcessorImpl) Process(ctx context.Context, data Payload) error {
 			// format of startDate 2007-04-02 04:00:00
 			startDate, err := time.Parse("2006-01-02 15:04:05", *data.Data.StartDate)
 			if err != nil {
-				return err
+				log.Warn("Failed to parse start date, continuing without date_rank",
+					zap.String("startDate", *data.Data.StartDate),
+					zap.Error(err))
+			} else {
+				dateRank := startDate.Unix()
+				dateRank = dateRank / 1000
+				data.Data.DateRank = &dateRank
 			}
-			dateRank := startDate.Unix()
-			dateRank = dateRank / 1000
-			data.Data.DateRank = &dateRank
 		}
 	}
 
