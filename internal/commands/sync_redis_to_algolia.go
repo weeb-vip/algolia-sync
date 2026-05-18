@@ -28,8 +28,8 @@ and then clears the Redis queue. It's designed to be run as a cron job.`,
 		// Initialize Redis service
 		redisService := redis.NewRedisService[redis_processor.QueuedItem](ctx, cfg.RedisConfig)
 
-		// Initialize Algolia service - using the same schema types
-		algoliaService := algolia.NewAlgoliaServiceWithoutTimer[redis_processor.Schema](ctx, cfg.AlgoliaConfig)
+		// Initialize Algolia service - using AlgoliaSchema for proper array fields
+		algoliaService := algolia.NewAlgoliaServiceWithoutTimer[redis_processor.AlgoliaSchema](ctx, cfg.AlgoliaConfig)
 
 		// Get all data from Redis
 		queuedItems, err := redisService.GetAllData(ctx)
@@ -52,12 +52,14 @@ and then clears the Redis queue. It's designed to be run as a cron job.`,
 		for _, item := range queuedItems {
 			switch item.Action {
 			case redis_processor.CreateAction, redis_processor.UpdateAction:
-				_, err := algoliaService.AddToIndex(ctx, item.Data)
+				// Convert Schema to AlgoliaSchema (transforms JSON strings to arrays)
+				algoliaData := item.Data.ToAlgoliaSchema()
+				_, err := algoliaService.AddToIndex(ctx, algoliaData)
 				if err != nil {
-					log.Error("Failed to add item to Algolia", 
+					log.Error("Failed to add item to Algolia",
 						zap.Error(err),
 						zap.String("action", string(item.Action)),
-						zap.String("objectId", *item.Data.ObjectId))
+						zap.String("objectId", algoliaData.ObjectId))
 					failCount++
 					continue
 				}

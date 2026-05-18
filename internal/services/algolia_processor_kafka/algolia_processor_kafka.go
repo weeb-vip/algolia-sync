@@ -17,10 +17,10 @@ type AlgoliaProcessor interface {
 }
 
 type AlgoliaProcessorImpl struct {
-	algolia.AlgoliaService[Schema]
+	algolia.AlgoliaService[AlgoliaSchema]
 }
 
-func NewAlgoliaProcessor(algoliaService algolia.AlgoliaService[Schema]) AlgoliaProcessor {
+func NewAlgoliaProcessor(algoliaService algolia.AlgoliaService[AlgoliaSchema]) AlgoliaProcessor {
 	return &AlgoliaProcessorImpl{
 		AlgoliaService: algoliaService,
 	}
@@ -55,7 +55,10 @@ func (p *AlgoliaProcessorImpl) Process(ctx context.Context, data event.Event[*ka
 			}
 		}
 
-		_, err := p.AlgoliaService.AddToIndex(ctx, payload.Data)
+		// Convert Schema to AlgoliaSchema (transforms JSON strings to arrays)
+		algoliaData := payload.Data.ToAlgoliaSchema()
+
+		_, err := p.AlgoliaService.AddToIndex(ctx, algoliaData)
 		if err != nil {
 			return data, err
 		}
