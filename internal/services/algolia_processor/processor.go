@@ -15,10 +15,10 @@ type ImageProcessor interface {
 }
 
 type ImageProcessorImpl struct {
-	algolia.AlgoliaService[Schema]
+	algolia.AlgoliaService[AlgoliaSchema]
 }
 
-func NewImageProcessor(algoliaService algolia.AlgoliaService[Schema]) ImageProcessor {
+func NewImageProcessor(algoliaService algolia.AlgoliaService[AlgoliaSchema]) ImageProcessor {
 	return &ImageProcessorImpl{
 		AlgoliaService: algoliaService,
 	}
@@ -50,7 +50,10 @@ func (p *ImageProcessorImpl) Process(ctx context.Context, data Payload) error {
 			}
 		}
 
-		_, err := p.AlgoliaService.AddToIndex(ctx, data.Data)
+		// Convert Schema to AlgoliaSchema (transforms JSON strings to arrays)
+		algoliaData := data.Data.ToAlgoliaSchema()
+
+		_, err := p.AlgoliaService.AddToIndex(ctx, algoliaData)
 		if err != nil {
 			return err
 		}
