@@ -6,7 +6,6 @@ import (
 	"github.com/weeb-vip/algolia-sync/internal/services/redis"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
-	"net/url"
 	"time"
 )
 
@@ -26,32 +25,21 @@ func NewImageProcessor(redisService redis.RedisService[QueuedItem]) ImageProcess
 
 func (p *ImageProcessorImpl) Process(ctx context.Context, data Payload) error {
 	log := logger.FromCtx(ctx)
-	
-	// Process the data similar to the original processor
-	if data.Action == CreateAction {
-		log.Info("Processing create action for Redis storage")
-		data.Data.ObjectId = &data.Data.Id
-		if data.Data.ObjectId == nil {
-			return fmt.Errorf("object id is nil")
-		}
-		// convert to url encoded string
-		encoded := url.QueryEscape(*data.Data.ObjectId)
-		data.Data.ObjectId = &encoded
-		// convert startDate to unix timestamp
-		if data.Data.StartDate != nil {
-			// format of startDate 2007-04-02 04:00:00
-			startDate, err := time.Parse("2006-01-02 15:04:05", *data.Data.StartDate)
-			if err != nil {
-				log.Warn("Failed to parse start date, continuing without date_rank",
-					zap.String("startDate", *data.Data.StartDate),
-					zap.Error(err))
-			} else {
-				dateRank := startDate.Unix()
-				dateRank = dateRank / 1000
-				data.Data.DateRank = &dateRank
-			}
-		}
+
+	// ObjectID is set for every action, not just creates. It used to be
+	// assigned inside the create branch while the log line below dereferenced
+	// it unconditionally, so the first delete or update to arrive would have
+	// panicked -- latent only because anime-sync labels everything "create".
+	if data.Data.Id == "" {
+		return fmt.Errorf("cannot queue a record with no id")
 	}
+	objectID := data.Data.Id
+	data.Data.ObjectId = &objectID
+
+	// date_rank is no longer computed here. It was parsed with a single layout
+	// that Debezium's ISO 8601 timestamps do not match, and then divided by
+	// 1000, which turned unix seconds into a number that was not a timestamp at
+	// all. Schema.ToDocument does it once, correctly, at index time.
 
 	// Create a queued item with action and processed data
 	queuedItem := QueuedItem{
@@ -67,9 +55,9 @@ func (p *ImageProcessorImpl) Process(ctx context.Context, data Payload) error {
 		return err
 	}
 
-	log.Info("Successfully stored data in Redis queue", 
+	log.Info("Successfully stored data in Redis queue",
 		zap.String("action", string(data.Action)),
-		zap.String("objectId", *data.Data.ObjectId))
+		zap.String("objectId", objectID))
 
 	return nil
 }

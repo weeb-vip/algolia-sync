@@ -29,7 +29,7 @@ and then clears the Redis queue. It's designed to be run as a cron job.`,
 		redisService := redis.NewRedisService[redis_processor.QueuedItem](ctx, cfg.RedisConfig)
 
 		// Initialize Algolia service - using AlgoliaSchema for proper array fields
-		algoliaService := algolia.NewAlgoliaServiceWithoutTimer[redis_processor.AlgoliaSchema](ctx, cfg.AlgoliaConfig)
+		algoliaService := algolia.NewAlgoliaServiceWithoutTimer[redis_processor.AnimeDocument](ctx, cfg.AlgoliaConfig)
 
 		// Get all data from Redis
 		queuedItems, err := redisService.GetAllData(ctx)
@@ -52,26 +52,32 @@ and then clears the Redis queue. It's designed to be run as a cron job.`,
 		for _, item := range queuedItems {
 			switch item.Action {
 			case redis_processor.CreateAction, redis_processor.UpdateAction:
-				// Convert Schema to AlgoliaSchema (transforms JSON strings to arrays)
-				algoliaData := item.Data.ToAlgoliaSchema()
-				_, err := algoliaService.AddToIndex(ctx, algoliaData)
+				doc := item.Data.ToDocument()
+				_, err := algoliaService.AddToIndex(ctx, doc)
 				if err != nil {
 					log.Error("Failed to add item to Algolia",
 						zap.Error(err),
 						zap.String("action", string(item.Action)),
-						zap.String("objectId", algoliaData.ObjectId))
+						zap.String("objectId", doc.ObjectID))
 					failCount++
 					continue
 				}
 				successCount++
 			case redis_processor.DeleteAction:
-				// TODO: Implement delete functionality when needed
-				log.Warn("Delete action not implemented yet", 
-					zap.String("objectId", *item.Data.ObjectId))
+				// Previously a TODO that logged a warning and moved on, which is
+				// why the index accumulated ~2,860 records whose anime no longer
+				// exists -- every one of them a search result leading to a 404.
+				if err := algoliaService.DeleteFromIndex(ctx, item.Data.Id); err != nil {
+					log.Error("Failed to delete item from Algolia",
+						zap.Error(err), zap.String("objectId", item.Data.Id))
+					failCount++
+					continue
+				}
+				successCount++
 			default:
-				log.Warn("Unknown action type", 
+				log.Warn("Unknown action type",
 					zap.String("action", string(item.Action)),
-					zap.String("objectId", *item.Data.ObjectId))
+					zap.String("objectId", item.Data.Id))
 				failCount++
 			}
 		}

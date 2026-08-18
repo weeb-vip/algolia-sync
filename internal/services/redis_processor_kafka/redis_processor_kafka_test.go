@@ -69,18 +69,28 @@ func TestProcess_ValidStartDate(t *testing.T) {
 	}
 
 	storedItem := mockRedis.StoredItems[0]
-	if storedItem.Data.DateRank == nil {
-		t.Fatal("Expected DateRank to be set")
+
+	// date_rank is deliberately NOT computed here any more. This test used to
+	// assert the value 1175486, which is unix seconds divided by 1000 -- not a
+	// timestamp in any unit, just the bug written down. Worse, the parser
+	// accepted a single layout, so the ISO 8601 timestamps Debezium actually
+	// emits produced no date_rank at all.
+	//
+	// The queue now carries the raw start_date and the sync job derives
+	// date_rank once, correctly; see document_test.go in redis_processor.
+	if storedItem.Data.DateRank != nil {
+		t.Errorf("processor should not compute DateRank, got %d", *storedItem.Data.DateRank)
+	}
+	if storedItem.Data.StartDate == nil {
+		t.Fatal("start_date must be preserved for the sync job to parse")
 	}
 
-	// Verify DateRank was calculated (2007-04-02 04:00:00 UTC = 1175486400 / 1000 = 1175486)
-	expectedDateRank := int64(1175486)
-	if *storedItem.Data.DateRank != expectedDateRank {
-		t.Errorf("Expected DateRank %d, got %d", expectedDateRank, *storedItem.Data.DateRank)
+	// ObjectID is set regardless of action, which is what stops a delete from
+	// panicking on a nil dereference.
+	if storedItem.Data.ObjectId == nil || *storedItem.Data.ObjectId != storedItem.Data.Id {
+		t.Errorf("ObjectId should mirror Id, got %v", storedItem.Data.ObjectId)
 	}
 
-	// Note: result.Payload.Data.DateRank may be nil since payload is modified locally
-	// The important thing is that the stored item has the correct DateRank
 	_ = result
 }
 

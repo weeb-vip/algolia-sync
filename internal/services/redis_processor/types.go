@@ -12,8 +12,11 @@ const (
 
 // Schema is the input schema from Redis (with JSON string fields)
 type Schema struct {
-	Id            string  `json:"id"`
-	AnidbID       *string `json:"anidbid"`
+	Id      string  `json:"id"`
+	AnidbID *string `json:"anidbid"`
+	// UrlSlug is generated in postgres and arrives over CDC. Absent from events
+	// published before the column existed, hence the pointer.
+	UrlSlug *string `json:"url_slug"`
 	TitleEn       *string `json:"title_en"`
 	TitleJp       *string `json:"title_jp"`
 	TitleRomaji   *string `json:"title_romaji"`
