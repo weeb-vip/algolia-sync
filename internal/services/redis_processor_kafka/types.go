@@ -9,8 +9,12 @@ const (
 )
 
 type Schema struct {
-	Id            string  `json:"id"`
-	AnidbID       *string `json:"anidbid"`
+	Id      string  `json:"id"`
+	AnidbID *string `json:"anidbid"`
+	// UrlSlug rides through Redis to the sync job, which builds the search
+	// document from it. Without it here the field is dropped in transit and
+	// search results cannot link to /anime/<slug>.
+	UrlSlug *string `json:"url_slug"`
 	TitleEn       *string `json:"title_en"`
 	TitleJp       *string `json:"title_jp"`
 	TitleRomaji   *string `json:"title_romaji"`

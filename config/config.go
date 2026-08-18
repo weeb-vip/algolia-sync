@@ -6,10 +6,18 @@ import (
 
 type Config struct {
 	AppConfig     AppConfig
+	SourceConfig  SourceConfig
 	PulsarConfig  PulsarConfig
 	AlgoliaConfig AlgoliaConfig
 	KafkaConfig   KafkaConfig
 	RedisConfig   RedisConfig
+}
+
+// SourceConfig points at the system of record. Reconcile needs to know which
+// anime exist; algolia-sync has no database of its own, and the gateway already
+// exposes the whole catalogue.
+type SourceConfig struct {
+	GraphQLHost string `default:"http://anime-api-internal/graphql" env:"GRAPHQL_HOST"`
 }
 
 type AppConfig struct {
