@@ -147,8 +147,14 @@ func (a *AlgoliaServiceImpl[T]) ApplySettings(ctx context.Context) error {
 	log.Info("applying index settings", zap.String("index", a.IndexName))
 
 	_, err := a.Index.SetSettings(search.Settings{
+		// title_romaji is deliberately absent: it is populated in 0 of 29,634
+		// rows in postgres, so it can never match, and Algolia warns that a
+		// record carrying an attribute ranks above one that does not -- which
+		// would quietly bias results the moment the scraper started filling it
+		// for some anime and not others. Add it back when the data exists.
+		// title_kanji is empty for the same reason and likewise not listed.
 		SearchableAttributes: opt.SearchableAttributes(
-			"title_en,title_jp,title_romaji,title_synonyms",
+			"title_en,title_jp,title_synonyms",
 			"studios",
 			"tags",
 		),
