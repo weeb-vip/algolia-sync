@@ -48,11 +48,25 @@ type AnimeDocument struct {
 	// Rating as a number, so numeric filters and sorts work on it.
 	Rating  *float64 `json:"rating,omitempty"`
 	Ranking *int     `json:"ranking,omitempty"`
+	// RankSort is what customRanking sorts on, and unlike Ranking it is always
+	// present. An omitted attribute does not sort last in Algolia -- it scores
+	// better than any real value -- so with asc(ranking) every unranked anime
+	// outranked every ranked one. Searching "one piece" returned "The One
+	// Piece" (no ranking) first and the actual series (ranking 54) at position
+	// 92, with both records identical on every textual criterion.
+	//
+	// Unranked entries get a sentinel far beyond any real MyAnimeList position,
+	// so they sort last instead of first. Ranking stays nullable for display;
+	// this field exists purely to sort.
+	RankSort int `json:"rank_sort"`
 
 	ImageURL *string `json:"image_url,omitempty"`
 	// Stored for display, excluded from searchableAttributes. See ApplySettings.
 	Description *string `json:"description,omitempty"`
 }
+
+// Beyond any real MyAnimeList position, so unranked entries sort last.
+const unrankedSortValue = 9_999_999
 
 // ToDocument maps a CDC row onto the search document.
 func (s *Schema) ToDocument() AnimeDocument {
@@ -69,6 +83,7 @@ func (s *Schema) ToDocument() AnimeDocument {
 		Ranking:       s.Ranking,
 		ImageURL:      s.ImageUrl,
 		Description:   s.Synopsis,
+		RankSort:      unrankedSortValue,
 		TitleSynonyms: parseJSONStringArray(s.TitleSynonyms),
 		Tags:          cleanList(parseJSONStringArray(s.Genres)),
 		Studios:       cleanList(parseJSONStringArray(s.Studios)),
@@ -85,6 +100,10 @@ func (s *Schema) ToDocument() AnimeDocument {
 	if t := parseTimestamp(s.EndDate); t != nil {
 		iso := t.Format("2006-01-02")
 		doc.EndDate = &iso
+	}
+
+	if s.Ranking != nil && *s.Ranking > 0 {
+		doc.RankSort = *s.Ranking
 	}
 
 	if s.Rating != nil {
