@@ -115,3 +115,40 @@ func TestMissingSlugStillProducesADocument(t *testing.T) {
 		t.Errorf("slug should be absent, got %v", doc.Slug)
 	}
 }
+
+// An omitted attribute does not sort last in Algolia's customRanking -- it
+// scores better than any real value. With asc(ranking) that put every unranked
+// anime above every ranked one: "one piece" returned "The One Piece" (no
+// ranking) first and the actual series (ranking 54) at position 92, with both
+// identical on every textual criterion.
+func TestUnrankedAnimeSortLastNotFirst(t *testing.T) {
+	ranked := (&Schema{Id: "a", Ranking: integer(54)}).ToDocument()
+	unranked := (&Schema{Id: "b"}).ToDocument()
+
+	if ranked.RankSort != 54 {
+		t.Errorf("a ranked anime should sort on its real position, got %d", ranked.RankSort)
+	}
+	if unranked.RankSort != unrankedSortValue {
+		t.Errorf("an unranked anime should get the sentinel, got %d", unranked.RankSort)
+	}
+	// The whole point: ascending order must put the ranked one first.
+	if !(ranked.RankSort < unranked.RankSort) {
+		t.Errorf("ranked (%d) must sort before unranked (%d)", ranked.RankSort, unranked.RankSort)
+	}
+}
+
+// Ranking itself stays nullable for display; only the sort field is synthesised.
+func TestRankingIsNotFabricatedForDisplay(t *testing.T) {
+	doc := (&Schema{Id: "b"}).ToDocument()
+	if doc.Ranking != nil {
+		t.Errorf("ranking should stay absent, got %v", *doc.Ranking)
+	}
+}
+
+// A zero ranking is not a real MyAnimeList position, and must not beat rank 1.
+func TestZeroRankingIsTreatedAsUnranked(t *testing.T) {
+	doc := (&Schema{Id: "c", Ranking: integer(0)}).ToDocument()
+	if doc.RankSort != unrankedSortValue {
+		t.Errorf("ranking 0 should sort as unranked, got %d", doc.RankSort)
+	}
+}

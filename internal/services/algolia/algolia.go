@@ -2,12 +2,12 @@ package algolia
 
 import (
 	"context"
-	"io"
 	"github.com/algolia/algoliasearch-client-go/v3/algolia/opt"
 	"github.com/algolia/algoliasearch-client-go/v3/algolia/search"
 	"github.com/weeb-vip/algolia-sync/config"
 	"github.com/weeb-vip/algolia-sync/internal/logger"
 	"go.uber.org/zap"
+	"io"
 	"time"
 )
 
@@ -27,9 +27,9 @@ type AlgoliaServiceImpl[T any] struct {
 	Index         *search.Index
 	// The v3 client's Index has no accessor for its own name, and both the
 	// settings and swap calls need it.
-	IndexName     string
-	AddBatch      []T
-	DeleteBatch   []string
+	IndexName   string
+	AddBatch    []T
+	DeleteBatch []string
 }
 
 func AutoFlush[T any](ctx context.Context, service AlgoliaService[T]) {
@@ -164,8 +164,11 @@ func (a *AlgoliaServiceImpl[T]) ApplySettings(ctx context.Context) error {
 			"filterOnly(slug)",
 		),
 		// Ties on text relevance fall back to how well known the anime is.
-		// ranking is MyAnimeList's position, where lower is better.
-		CustomRanking: opt.CustomRanking("asc(ranking)"),
+		// rank_sort is MyAnimeList's position where lower is better, with
+		// unranked entries carrying a sentinel so they sort last. Sorting on
+		// `ranking` directly does the opposite: an omitted attribute scores
+		// better than any real value, so every unranked anime won.
+		CustomRanking: opt.CustomRanking("asc(rank_sort)"),
 		// Returned but never matched on.
 		AttributesToRetrieve: opt.AttributesToRetrieve("*"),
 	})
