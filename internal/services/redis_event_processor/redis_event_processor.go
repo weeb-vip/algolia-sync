@@ -1,31 +1,39 @@
-package redis_processor_kafka
+package redis_event_processor
 
 import (
 	"context"
 	"fmt"
 	"github.com/ThatCatDev/ep/v2/event"
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/weeb-vip/algolia-sync/internal/logger"
 	"github.com/weeb-vip/algolia-sync/internal/services/redis"
 	"go.uber.org/zap"
 	"time"
 )
 
-type RedisProcessor interface {
-	Process(ctx context.Context, data event.Event[*kafka.Message, Payload]) (event.Event[*kafka.Message, Payload], error)
+// The driver message type is a parameter because the processor never looks at
+// it. Nothing here reads DriverMessage, RawData or Headers -- only Payload,
+// which ep populates from the message body. This package was called
+// redis_processor_kafka purely because *kafka.Message was baked into the
+// signature; none of the logic was ever Kafka-specific.
+//
+// Renamed to redis_event_processor rather than redis_processor: that name is
+// taken by the document-mapping package, which reconcile, sync-redis-to-algolia
+// and the index admin commands all use and which has nothing to do with events.
+type RedisProcessor[DM any] interface {
+	Process(ctx context.Context, data event.Event[DM, Payload]) (event.Event[DM, Payload], error)
 }
 
-type RedisProcessorImpl struct {
+type RedisProcessorImpl[DM any] struct {
 	redisService redis.RedisService[QueuedItem]
 }
 
-func NewRedisProcessor(redisService redis.RedisService[QueuedItem]) RedisProcessor {
-	return &RedisProcessorImpl{
+func NewRedisProcessor[DM any](redisService redis.RedisService[QueuedItem]) RedisProcessor[DM] {
+	return &RedisProcessorImpl[DM]{
 		redisService: redisService,
 	}
 }
 
-func (p *RedisProcessorImpl) Process(ctx context.Context, data event.Event[*kafka.Message, Payload]) (event.Event[*kafka.Message, Payload], error) {
+func (p *RedisProcessorImpl[DM]) Process(ctx context.Context, data event.Event[DM, Payload]) (event.Event[DM, Payload], error) {
 	log := logger.FromCtx(ctx)
 
 	payload := data.Payload
@@ -56,7 +64,7 @@ func (p *RedisProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 		return data, err
 	}
 
-	log.Info("Successfully stored data in Redis queue", 
+	log.Info("Successfully stored data in Redis queue",
 		zap.String("action", string(payload.Action)),
 		zap.String("objectId", objectID))
 

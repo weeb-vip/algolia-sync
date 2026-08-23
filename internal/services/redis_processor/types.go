@@ -16,7 +16,7 @@ type Schema struct {
 	AnidbID *string `json:"anidbid"`
 	// UrlSlug is generated in postgres and arrives over CDC. Absent from events
 	// published before the column existed, hence the pointer.
-	UrlSlug *string `json:"url_slug"`
+	UrlSlug       *string `json:"url_slug"`
 	TitleEn       *string `json:"title_en"`
 	TitleJp       *string `json:"title_jp"`
 	TitleRomaji   *string `json:"title_romaji"`

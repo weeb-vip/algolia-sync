@@ -89,7 +89,7 @@ and then clears the Redis queue. It's designed to be run as a cron job.`,
 			return err
 		}
 
-		log.Info("Sync processing completed", 
+		log.Info("Sync processing completed",
 			zap.Int("successful", successCount),
 			zap.Int("failed", failCount),
 			zap.Int("total", len(queuedItems)))

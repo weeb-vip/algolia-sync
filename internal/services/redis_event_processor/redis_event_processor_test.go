@@ -1,4 +1,4 @@
-package redis_processor_kafka
+package redis_event_processor
 
 import (
 	"context"
@@ -43,7 +43,7 @@ func stringPtr(s string) *string {
 
 func TestProcess_ValidStartDate(t *testing.T) {
 	mockRedis := &MockRedisService{}
-	processor := NewRedisProcessor(mockRedis)
+	processor := NewRedisProcessor[*kafka.Message](mockRedis)
 	ctx := setupTestContext()
 
 	payload := Payload{
@@ -96,7 +96,7 @@ func TestProcess_ValidStartDate(t *testing.T) {
 
 func TestProcess_InvalidStartDate_ContinuesWithoutDateRank(t *testing.T) {
 	mockRedis := &MockRedisService{}
-	processor := NewRedisProcessor(mockRedis)
+	processor := NewRedisProcessor[*kafka.Message](mockRedis)
 	ctx := setupTestContext()
 
 	payload := Payload{
@@ -136,7 +136,7 @@ func TestProcess_InvalidStartDate_ContinuesWithoutDateRank(t *testing.T) {
 
 func TestProcess_NoStartDate(t *testing.T) {
 	mockRedis := &MockRedisService{}
-	processor := NewRedisProcessor(mockRedis)
+	processor := NewRedisProcessor[*kafka.Message](mockRedis)
 	ctx := setupTestContext()
 
 	payload := Payload{
@@ -169,17 +169,17 @@ func TestProcess_NoStartDate(t *testing.T) {
 
 func TestProcess_WrongDateFormat_ContinuesProcessing(t *testing.T) {
 	mockRedis := &MockRedisService{}
-	processor := NewRedisProcessor(mockRedis)
+	processor := NewRedisProcessor[*kafka.Message](mockRedis)
 	ctx := setupTestContext()
 
 	// Test various invalid date formats
 	invalidDates := []string{
-		"2007/04/02",           // wrong separator
-		"04-02-2007",           // wrong order
-		"2007-04-02",           // missing time
-		"2007-04-02T04:00:00",  // ISO format with T
-		"April 2, 2007",        // text format
-		"",                     // empty string
+		"2007/04/02",          // wrong separator
+		"04-02-2007",          // wrong order
+		"2007-04-02",          // missing time
+		"2007-04-02T04:00:00", // ISO format with T
+		"April 2, 2007",       // text format
+		"",                    // empty string
 	}
 
 	for _, invalidDate := range invalidDates {
@@ -216,7 +216,7 @@ func TestProcess_WrongDateFormat_ContinuesProcessing(t *testing.T) {
 
 func TestProcess_UpdateAction_SkipsDateProcessing(t *testing.T) {
 	mockRedis := &MockRedisService{}
-	processor := NewRedisProcessor(mockRedis)
+	processor := NewRedisProcessor[*kafka.Message](mockRedis)
 	ctx := setupTestContext()
 
 	objectId := "existing-object-id"

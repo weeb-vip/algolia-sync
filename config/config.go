@@ -7,9 +7,9 @@ import (
 type Config struct {
 	AppConfig     AppConfig
 	SourceConfig  SourceConfig
-	PulsarConfig  PulsarConfig
 	AlgoliaConfig AlgoliaConfig
 	KafkaConfig   KafkaConfig
+	NatsConfig    NatsConfig
 	RedisConfig   RedisConfig
 }
 
@@ -24,12 +24,6 @@ type AppConfig struct {
 	APPName string `default:"algolia-sync" env:"APP_NAME"`
 	Port    int    `env:"PORT" default:"3000"`
 	Version string `default:"x.x.x"`
-}
-
-type PulsarConfig struct {
-	URL              string `default:"pulsar://localhost:6650" env:"PULSARURL"`
-	Topic            string `default:"public/default/myanimelist.public.anime" env:"PULSARTOPIC"`
-	SubscribtionName string `default:"my-sub" env:"PULSARSUBSCRIPTIONNAME"`
 }
 
 type AlgoliaConfig struct {
@@ -52,6 +46,26 @@ type RedisConfig struct {
 	Password string `default:"" env:"REDIS_PASSWORD"`
 	DB       int    `default:"0" env:"REDIS_DB"`
 	Key      string `default:"algolia-sync:data" env:"REDIS_KEY"`
+}
+
+// NatsConfig mirrors KafkaConfig, so moving between the two is one substitution
+// per setting.
+type NatsConfig struct {
+	URL string `default:"nats://localhost:4222" env:"NATSURL"`
+
+	// The durable consumer name -- the closest equivalent to a Kafka consumer
+	// group. Left empty the consumer is ephemeral and loses its position on
+	// restart.
+	ConsumerGroupName string `default:"algolia-sync-nats" env:"NATSCONSUMERGROUPNAME"`
+
+	// Empty on purpose, unlike the CDC consumers: algolia-sync is produced by
+	// anime-sync rather than Debezium, so no other stream declares it and the
+	// driver should create one from the subject.
+	StreamName string `env:"NATSSTREAMNAME"`
+
+	Offset string `default:"earliest" env:"NATSOFFSET"`
+
+	Subject string `default:"algolia-sync" env:"NATSSUBJECT"`
 }
 
 func LoadConfigOrPanic() Config {
