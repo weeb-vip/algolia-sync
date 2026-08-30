@@ -19,6 +19,7 @@ type AlgoliaService[T any] interface {
 	// whose source row is gone.
 	AllObjectIDs(ctx context.Context) (map[string]struct{}, error)
 	ApplySettings(ctx context.Context) error
+	ApplyWorkSettings(ctx context.Context) error
 	ReplaceLiveIndex(ctx context.Context, sourceIndex string) error
 }
 
@@ -172,6 +173,55 @@ func (a *AlgoliaServiceImpl[T]) ApplySettings(ctx context.Context) error {
 		// Returned but never matched on.
 		AttributesToRetrieve: opt.AttributesToRetrieve("*"),
 	})
+	return err
+}
+
+// ApplyWorkSettings is ApplySettings for the works index.
+//
+// A second method rather than a parameter because the two indices are
+// configured, not computed: each one's attributes are a decision about how that
+// search should behave, and writing them out is what makes those decisions
+// reviewable. Calling the anime version against the works index would set
+// searchable attributes -- studios, tags -- that no work has.
+//
+// The differences from the anime settings are the fields themselves. Authors
+// are searchable because people look a manga up by its author far more often
+// than they look an anime up by its studio. Serialization is a facet rather
+// than a search field: "Shounen Jump" is a useful filter and a poor query.
+// Synopsis stays out of searchableAttributes for the same reason it does on
+// anime -- matching body text makes every result look plausible and ranks them
+// by coincidence.
+func (a *AlgoliaServiceImpl[T]) ApplyWorkSettings(ctx context.Context) error {
+	log := logger.FromCtx(ctx)
+	log.Info("applying work index settings", zap.String("index", a.IndexName))
+
+	_, err := a.Index.SetSettings(search.Settings{
+		SearchableAttributes: opt.SearchableAttributes(
+			"title_en,title_jp,title_synonyms",
+			"authors",
+		),
+		AttributesForFaceting: opt.AttributesForFaceting(
+			"searchable(authors)",
+			"searchable(serialization)",
+			"type",
+			"status",
+			"demographic",
+			"year",
+			// filterOnly: never shown as a facet, but usable in filters, which
+			// is what an id or slug lookup needs.
+			"filterOnly(id)",
+			"filterOnly(slug)",
+		),
+		// Ties on text relevance fall back to how well known the work is.
+		// rank_sort carries a sentinel for unranked entries so they sort last;
+		// sorting on `ranking` directly does the reverse, because an omitted
+		// attribute scores better than any real value. That matters more here
+		// than on anime: most of MyAnimeList's manga have no ranking at all.
+		CustomRanking: opt.CustomRanking("asc(rank_sort)"),
+		// Returned but never matched on.
+		AttributesToRetrieve: opt.AttributesToRetrieve("*"),
+	})
+
 	return err
 }
 
